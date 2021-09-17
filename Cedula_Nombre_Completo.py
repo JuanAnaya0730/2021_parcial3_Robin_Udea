@@ -50,7 +50,7 @@ def isValidOption(rLower, rUpper, messaje = "Ingrese su opcion: "):
 def clearScreen():
     print("\n"*20)
 
-def processDay(_day_):
+def processDay(_day_): # Esta funcion se encarga de procesar los datos de un dia especifico
     # _day_: Variable que contiene el dia a procesar    
     
     file = open("data/" + _day_+ "pal.csv",'r') # Se abre el archivo correspondiente al dia a procesar
@@ -69,17 +69,49 @@ def processDay(_day_):
         # Aqui se convierten de str a datetime los valores de Time Stamp 
         tempDate = datetime.datetime.strptime(aux[0], "%m/%d/%Y %H:%M:%S") # El valor de esta variable cambia con cada iteracion
         
-        # Se verifica si existe una clave en 'data' igual a 'tempDate'
-        if tempDate in data:
-            # Si la clave existe se añade otro dato al diccionario correspondiente a su valor 
-            data[tempDate][aux[2]] = float(aux[4])
-        else:
-            # Si la clave no existe, se crea y se le añade un diccionario con formato {Name: Load} como valor
-            data[tempDate] = {aux[2]:float(aux[4])}
-            
+        if aux[4] != "": # Se Load no tiene medida, se ignora ese tiempo en que debio ser tomada
+            # Se verifica si existe una clave en 'data' igual a 'tempDate'
+            if tempDate in data:
+                # Si la clave existe se añade otro dato al diccionario correspondiente a su valor 
+                data[tempDate][aux[2]] = float(aux[4])
+            else:
+                # Si la clave no existe, se crea y se le añade un diccionario con formato {Name: Load} como valor
+                data[tempDate] = {aux[2]:float(aux[4])}
+                
     file.close() # Se cierra el archivo correspondiente al dia _day_
     
     return data # Esta funcion retorna un diccionario con el formato {Time Stamp:{Name:Load}}
+
+def hourlyAverage(_day_, _zone_="TOTAL"):
+    zoneAverage = fiveMinutesResolution(_day_, _zone_)
+    hourlyAverages = []
+ 
+    for average in range(0,len(zoneAverage),12):
+        tempAverage = 0
+        for h in range(average,average+12):
+            tempAverage += zoneAverage[h]
+            
+        hourlyAverages.append(tempAverage/12)
+        
+    return hourlyAverages
+
+def fiveMinutesResolution(_day_, _zone_="TOTAL"):
+    timeReference = list(_day_.keys())[0]
+    resolution = []
+    
+    for mainKey in _day_:
+        tempAverage = 0
+        if mainKey == timeReference or mainKey > timeReference:
+            for secondKey in _day_[mainKey]:
+                if secondKey == _zone_ or _zone_=="TOTAL":
+                    tempAverage += _day_[mainKey][secondKey]
+            
+            resolution.append(tempAverage)
+            timeReference += datetime.timedelta(minutes=5)
+        
+    return resolution
+
+hourlyAverage(processDay("20200115"))
     
 if __name__ == '__main__':
     main()
